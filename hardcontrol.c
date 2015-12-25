@@ -2,6 +2,10 @@
 #include <jni.h>  /* /usr/lib/jvm/java-1.7.0-openjdk-amd64/include/ */
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
 
 #include <android/log.h>  /* liblog */
 
@@ -15,22 +19,28 @@ typedef struct {
     void *fnPtr;          /* C语言实现的本地函数 */
 } JNINativeMethod;
 #endif
-
+static jint fd;
 jint ledCtrl(JNIEnv *env, jobject cls, jint which, jint status)
 {
-	__android_log_print(ANDROID_LOG_DEBUG, "LEDDemo", "native ledCtrl: %d, %d", which, status);
-	return 0;
+	int ret = ioctl(fd, status, which);
+	__android_log_print(ANDROID_LOG_DEBUG, "LEDDemo", "native ledCtrl: %d, %d, %d", which, status, ret);
+	return ret;
 }
 
 jint ledOpen(JNIEnv *env, jobject cls)
 {
-	__android_log_print(ANDROID_LOG_DEBUG, "LEDDemo", "native ledOpen ...");
-	return 0;
+	fd = open("/dev/leds", O_RDWR);
+	__android_log_print(ANDROID_LOG_DEBUG, "LEDDemo", "native ledOpen: %d", fd);
+	if(fd >= 0)
+		return 0;
+	else
+		return -1;
 }
 
 void ledClose(JNIEnv *env, jobject cls)
 {
 	__android_log_print(ANDROID_LOG_DEBUG, "LEDDemo", "native ledClose ...");
+	close(fd);
 }
 
 
